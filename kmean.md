@@ -1,1 +1,0 @@
-1. Distance from depot to centroid
