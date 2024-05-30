@@ -81,7 +81,7 @@ if __name__ == "__main__":
     # for num in tqdm(List_nums):
     #     List_total_distance.append(getTotalDistance(num))
     
-    with Pool(processes=8) as p:
+    with Pool(processes=4) as p:
         List_total_distance = list(tqdm(p.imap(getTotalDistance, List_nums), total=len(List_nums)))
 
     List_total_distance = sorted(List_total_distance, key=lambda kv: kv[1])
