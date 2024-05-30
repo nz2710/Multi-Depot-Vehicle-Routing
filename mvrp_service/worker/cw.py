@@ -7,7 +7,7 @@ def isAllRouteIsServed(route_not_served_List):
             return False
     return True
 
-def create_savings(depot_index, cluster_index, depots_customers_metadata, D_pairwise, num_depots):
+def create_savings(depot_index, cluster_index, depots_customers_metadata, X_pairwise, num_depots):
     savings = dict()
     for i in depots_customers_metadata[depot_index][cluster_index]:
         for j in depots_customers_metadata[depot_index][cluster_index]:
@@ -15,7 +15,8 @@ def create_savings(depot_index, cluster_index, depots_customers_metadata, D_pair
                 max_start = max(i, j)
                 min_end = min(i, j)
                 key = '[' + str(max_start) + ',' + str(min_end) + ']'
-                savings[key] = D_pairwise[depot_index][i+num_depots] + D_pairwise[depot_index][j+num_depots] - D_pairwise[i+num_depots][j+num_depots]
+                # savings[key] = D_pairwise[depot_index][i+num_depots] + D_pairwise[depot_index][j+num_depots] - D_pairwise[i+num_depots][j+num_depots]
+                savings[key] = distance(X_pairwise[depot_index], X_pairwise[i+num_depots]) + distance(X_pairwise[depot_index], X_pairwise[j+num_depots]) - distance(X_pairwise[i+num_depots], X_pairwise[j+num_depots])
     keys = list(savings.keys())
     values = list(savings.values())
     sorted_value_index = np.argsort(values)
@@ -77,14 +78,13 @@ def link_and_route(link, routes):
     return node_in_route, count_node_in_link_belong_exist_route, index_route, overlap_route
 
 def Clark_Wright_Savings_Solver(X_pairwise,
-                                T_pairwise, 
-                                D_pairwise,
                                 savings, 
                                 depot_index, 
                                 cluster_index, 
                                 depots_customers_metadata, 
                                 vehicle_capacity,
                                 num_depots,
+                                max_vehicles,
                                 max_duration_route,
                                 v
     ):
@@ -113,7 +113,8 @@ def Clark_Wright_Savings_Solver(X_pairwise,
             # Nếu cả 2 node i, j đều chưa thuộc một route nào => TH1
             if count_node_in_link_belong_exist_route == 0:
                 if constrant_total(X_pairwise, link, depot_index, num_depots) <= vehicle_capacity \
-                and time_constranst_total(T_pairwise, X_pairwise, link, depot_index, num_depots) <= max_duration_route:
+                and len(routes) < max_vehicles \
+                and time_constranst_total(X_pairwise, link, depot_index, num_depots) <= max_duration_route:
                     routes.append(link)
                     node_list.remove(link[0])
                     node_list.remove(link[1])
@@ -135,13 +136,13 @@ def Clark_Wright_Savings_Solver(X_pairwise,
                     if is_satisfy_constrant:
                         if position == 0:
                             routes[i_route].insert(0, node)
-                            if time_constranst_total(T_pairwise, X_pairwise, routes[i_route], depot_index, num_depots) <= max_duration_route:
+                            if time_constranst_total(X_pairwise, routes[i_route], depot_index, num_depots) <= max_duration_route:
                                 node_list.remove(node)
                             else:
                                 routes[i_route] = routes[i_route][1:]
                         else:
                             routes[i_route].append(node)
-                            if time_constranst_total(T_pairwise, X_pairwise, routes[i_route], depot_index, num_depots) <= max_duration_route:
+                            if time_constranst_total(X_pairwise, routes[i_route], depot_index, num_depots) <= max_duration_route:
                                 node_list.remove(node)
                             else:
                                 routes[i_route] = routes[i_route][:-1]
@@ -163,7 +164,7 @@ def Clark_Wright_Savings_Solver(X_pairwise,
                     if is_node_interior_flag1 and is_node_interior_flag2:
                         if is_satisfy_constrant:
                             route_temp = merge(routes[index_route[0]], routes[index_route[1]], node_in_route)
-                            if time_constranst_total(T_pairwise, X_pairwise, route_temp, depot_index, num_depots) <= max_duration_route:
+                            if time_constranst_total(X_pairwise, route_temp, depot_index, num_depots) <= max_duration_route:
                                 temp1 = routes[index_route[0]]
                                 temp2 = routes[index_route[1]]
                                 routes.remove(temp1)
@@ -193,7 +194,7 @@ def Clark_Wright_Savings_Solver(X_pairwise,
     # Nếu còn bất kỳ node nào chưa được assign route, 
     # tạo 1 route mới chỉ bao gồm 1 node đó (nếu có constranst về số xe, phải kiểm tra thêm điều kiện)
     for node_not_assgined in node_list:
-        if 2 * caculate_time_travel(T_pairwise[depot_index][node_not_assgined + num_depots], v) <= max_duration_route:
+        if 2 * caculate_time_travel(distance(X_pairwise[depot_index], X_pairwise[node_not_assgined + num_depots]), v) <= max_duration_route and len(routes) < max_vehicles:
             routes.append([node_not_assgined])
         else:
             node_not_assigneds.append(node_not_assgined)
@@ -204,17 +205,17 @@ def Clark_Wright_Savings_Solver(X_pairwise,
     for route in routes:
         route_temp = route
         if len(route_temp) == 1:
-            total_distance_route_has_one_node += distance_total(D_pairwise, route_temp, depot_index, num_depots)
+            total_distance_route_has_one_node += distance_total(X_pairwise, route_temp, depot_index, num_depots)
         route = ["depot_" + str(depot_index)] + route + ["depot_" + str(depot_index)]
         routes_metada_depot[str(route)] = {
                                             "total_demand": constrant_total(X_pairwise, route, depot_index, num_depots), 
-                                            "total_time_serving": time_constranst_total(T_pairwise, X_pairwise, route_temp, depot_index, num_depots),
-                                            "total_distance": distance_total(D_pairwise, route_temp, depot_index, num_depots),
+                                            "total_time_serving": time_constranst_total(X_pairwise, route_temp, depot_index, num_depots),
+                                            "total_distance": distance_total(X_pairwise, route_temp, depot_index, num_depots),
                                             "total_distance_route_has_one_node": total_distance_route_has_one_node
                                         }
 
     if len(node_not_assigneds) > 0:
-        print("Error: Có một số customers không thoả mãn ràng buộc max_duration_route !!!")
-        return [], {}, node_not_assigneds
+        print("Error: Có một số customers không thoả mãn ràng buộc max_duration_route hoặc max_vehicles !!!")
+        return [], {}, node_list
 
     return routes, routes_metada_depot, node_not_assigneds

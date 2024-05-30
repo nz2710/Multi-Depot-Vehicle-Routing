@@ -19,6 +19,8 @@ def mvrpExp():
 
     file = request.files['file']
 
+    V = request.form.get('V')
+
     # If user does not select file, browser also
     # submit an empty part without filename
     if file.filename == '':
@@ -31,7 +33,7 @@ def mvrpExp():
         total_distance_without_allocating_vehicles, total_demand_without_allocating_vehicles, \
         total_time_serving_without_allocating_vehicles, route_served_List_return, \
         route_not_served_List_return, total_demand_served, \
-        total_distance_served, total_time_serving_served = mvrp(file_path)
+        total_distance_served, total_time_serving_served = mvrp(file_path, V)
         return jsonify({
                         'total_distance_without_allocating_vehicles': total_distance_without_allocating_vehicles, 
                         'total_demand_without_allocating_vehicles': total_demand_without_allocating_vehicles, 

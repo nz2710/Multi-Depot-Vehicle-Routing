@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 from fractions import Fraction
 from mvrp_service import config
+from haversine import haversine
 
 def diffDict(dict1, dict2):
     list_diff_key = []
@@ -14,45 +15,52 @@ def diffDict(dict1, dict2):
     return list_diff_key
 
 # Hàm tính khoảng cách eclid
-def distance(node1, node2):
+def distanceEuclid(node1, node2):
     square = math.pow((node1[0] - node2[0]), 2) + math.pow((node1[1] - node2[1]), 2)
     return math.sqrt(square)
 
+# Hàm tính khoảng cách eclid
+def distance(node1, node2):
+    hd = haversine((node1[0], node1[1]), (node2[0], node2[1]))
+    return hd
+    # square = math.pow((node1[0] - node2[0]), 2) + math.pow((node1[1] - node2[1]), 2)
+    # return math.sqrt(square)
+
 # Total distance
-def distance_total(D_pairwise, routeNew, depot_index, num_depots):
+def distance_total(X_pairwise, routeNew, depot_index, num_depots):
     total_distance = 0.0
     routeNewTemp = routeNew
-    if routeNew[0] == depot_index and routeNew[-1] == depot_index:
+    if routeNew[0] == depot_index and routeNew[-1] == depot_index and len(routeNew) > 1:
         routeNewTemp = routeNew[1:-1]
     for i in range(len(routeNewTemp) - 1):
         if routeNewTemp[i] != depot_index:
-            total_distance += D_pairwise[routeNewTemp[i] + num_depots][routeNewTemp[i + 1] + num_depots]
-    total_distance += D_pairwise[depot_index][routeNewTemp[0] + num_depots]
-    total_distance += D_pairwise[depot_index][routeNewTemp[-1] + num_depots]
+            total_distance += distance(X_pairwise[routeNewTemp[i] + num_depots], X_pairwise[routeNewTemp[i + 1] + num_depots])
+    total_distance += distance(X_pairwise[depot_index], X_pairwise[routeNewTemp[0] + num_depots])
+    total_distance += distance(X_pairwise[depot_index], X_pairwise[routeNewTemp[-1] + num_depots])
     return total_distance
 
 # Time serving constranst for sorted
-def time_constranst_total_for_sort(T_pairwise, X_pairwise, routeNew, depot_index, num_depots):
+def time_constranst_total_for_sort(X_pairwise, routeNew, depot_index, num_depots):
     total_time = 0.0
     routeNewTemp = routeNew
-    if routeNew[0] == depot_index and routeNew[-1] == depot_index:
+    if routeNew[0] == depot_index and routeNew[-1] == depot_index and len(routeNew) > 1:
         routeNewTemp = routeNew[1:-1]
     for i in range(len(routeNewTemp)):
         if routeNewTemp[i] != depot_index and i + 1 <= len(routeNewTemp) - 1:
-            total_time += T_pairwise[routeNewTemp[i] + num_depots][routeNewTemp[i + 1] + num_depots] + X_pairwise[routeNewTemp[i] + num_depots][3]
+            total_time += caculate_time_travel(distance(X_pairwise[routeNewTemp[i] + num_depots], X_pairwise[routeNewTemp[i + 1] + num_depots]), config.V) + X_pairwise[routeNewTemp[i] + num_depots][3]
         else:
             total_time += X_pairwise[routeNewTemp[i] + num_depots][3]
     return total_time
 
 # Total distance for sorted
-def distance_total_for_sort(D_pairwise, routeNew, depot_index, num_depots):
+def distance_total_for_sort(X_pairwise, routeNew, depot_index, num_depots):
     total_distance = 0.0
     routeNewTemp = routeNew
-    if routeNew[0] == depot_index and routeNew[-1] == depot_index:
+    if routeNew[0] == depot_index and routeNew[-1] == depot_index and len(routeNew) > 1:
         routeNewTemp = routeNew[1:-1]
     for i in range(len(routeNewTemp) - 1):
         if routeNewTemp[i] != depot_index:
-            total_distance += D_pairwise[routeNewTemp[i] + num_depots][routeNewTemp[i + 1] + num_depots]
+            total_distance += distance(X_pairwise[routeNewTemp[i] + num_depots], X_pairwise[routeNewTemp[i + 1] + num_depots])
     return total_distance
 
 # Hàm tính thời gian
@@ -64,59 +72,68 @@ def caculate_pairwise(customers_info, depots_info, v):
     X_pairwise = []
     X_for_kmean = []
     De_for_kmean = []
+    ID_mappings = {}
 
-    for depot_info in depots_info:
+    for i, depot_info in enumerate(depots_info):
         depot_info = " ".join(depot_info.split())
         x = float(depot_info.split()[1])
         y = float(depot_info.split()[2])
         d = float(depot_info.split()[4])
         t = float(depot_info.split()[3])
+        id = int(depot_info.split()[5])
         De_for_kmean.append([x, y])
         X_pairwise.append([x, y, d, t])
+        ID_mappings[i] = id
 
     De_for_kmean = np.array(De_for_kmean)
     
-    for customer_info in customers_info:
+    for i, customer_info in enumerate(customers_info):
         customer_info = " ".join(customer_info.split())
         x = float(customer_info.split()[1])
         y = float(customer_info.split()[2])
         d = float(customer_info.split()[4])
         t = float(customer_info.split()[3])
+        id = int(customer_info.split()[5])
         X_for_kmean.append([x, y])
         X_pairwise.append([x, y, d, t])
+        ID_mappings[i + len(depots_info)] = id
 
     X_for_kmean = np.array(X_for_kmean)
 
-    num_nodes = len(X_pairwise)
+    # num_nodes = len(X_pairwise)
 
-    D_pairwise = np.zeros((num_nodes, num_nodes), dtype=np.float32)
+    # D_pairwise = np.zeros((num_nodes, num_nodes), dtype=np.float16)
 
-    T_pairwise = np.zeros((num_nodes, num_nodes), dtype=np.float32)
+    # T_pairwise = np.zeros((num_nodes, num_nodes), dtype=np.float16)
 
-    for i in tqdm(range(num_nodes)):
-        for j in range(num_nodes):
-            D_pairwise[i][j] = distance(X_pairwise[i], X_pairwise[j])
-            T_pairwise[i][j] = caculate_time_travel(D_pairwise[i][j], v)
+    # for i in tqdm(range(num_nodes)):
+    #     for j in range(num_nodes):
+    #         if i == j:
+    #             D_pairwise[i][j] = 0.0
+    #             T_pairwise[i][j] = 0.0
+    #         else:
+    #             D_pairwise[i][j] = distance(X_pairwise[i], X_pairwise[j])
+    #             T_pairwise[i][j] = caculate_time_travel(D_pairwise[i][j], v)
     
-    return X_for_kmean, De_for_kmean, X_pairwise, D_pairwise, T_pairwise
+    return X_for_kmean, De_for_kmean, X_pairwise, ID_mappings
 
 # Lấy depot gần nhất với depot đang xét
-def get_depot_closet(depot_index, num_depots, D_pairwise, flag_assigned):
+def get_depot_closet(depot_index, num_depots, X_pairwise, flag_assigned):
     min_distance = config.MAX_NUMBER
     for di in range(num_depots):
         if di != depot_index and flag_assigned[di] != True:
-            min_distance = min(min_distance, D_pairwise[di][depot_index])
+            min_distance = min(min_distance, distance(X_pairwise[di], X_pairwise[depot_index]))
     for di in range(num_depots):
         if di != depot_index and flag_assigned[di] != True:
-            if min_distance == D_pairwise[di][depot_index]:
+            if min_distance == distance(X_pairwise[di], X_pairwise[depot_index]):
                 return di
     return -1
 
-def caculate_vehicles_for_each_depot_method_1(D_pairwise, 
+def caculate_vehicles_for_each_depot_method_1(X_pairwise, 
                                      num_vehicles, 
                                      num_vehicle_depots_metadata_sorted, 
                                      num_vehicle_depots_metadata_sorted_origin
-                                    ):
+                                     ):
     num_depots = len(num_vehicle_depots_metadata_sorted)
     fraction = Fraction(num_vehicles, num_depots)
     simplified_fraction = str(fraction.limit_denominator())
@@ -145,7 +162,7 @@ def caculate_vehicles_for_each_depot_method_1(D_pairwise,
                 #     print(str(i) + " === " + str(num_vehicle_assign_last))
                 # Từ depot ở vị trí i + 1 trong mảng num_vehicle_depots_metadata_sorted trở đi
                 # Tìm depot gần nhất với depot ở vị trí i
-                depot_closet_i = get_depot_closet(num_vehicle_depots_metadata_sorted[i][0], num_depots, D_pairwise, flag_assigned)
+                depot_closet_i = get_depot_closet(num_vehicle_depots_metadata_sorted[i][0], num_depots, X_pairwise, flag_assigned)
                 # if i == 3:
                 #     print("depot_closet: " + str(depot_closet_i))
                 if depot_closet_i != -1:
@@ -179,7 +196,7 @@ def caculate_vehicles_for_each_depot_method_1(D_pairwise,
         elif 0 < num_vehicle_assign_last < t:
             # Từ depot ở vị trí i + 1 trong mảng num_vehicle_depots_metadata_sorted trở đi
             # Tìm depot gần nhất với depot ở vị trí i
-            depot_closet_i = get_depot_closet(num_vehicle_depots_metadata_sorted[i][0], num_depots, D_pairwise, flag_assigned)
+            depot_closet_i = get_depot_closet(num_vehicle_depots_metadata_sorted[i][0], num_depots, X_pairwise, flag_assigned)
             if depot_closet_i != -1:
                 if flag_assigned[depot_closet_i] == False:
                     for index, item in enumerate(num_vehicle_depots_metadata_sorted):
