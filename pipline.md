@@ -1,7 +1,11 @@
-1. Phân cụm kmean với số cụm = số depot
-2. Với mỗi depot, tạo các route thỏa mãn constranst số xe, time serving total, capacitied
-3. Chọn serving depot có số route lớn nhất => nhỏ nhất
-    Ví dụ:
-    Depot 1: 4 route : => Chọn 4 xe
-    Depot 2: 3 route : => Luân chuyển 3 xe từ Depot 1 sang Depot 2 (+3 chi phí khoảng cách, +3 chi phí thời gian)
-    Depot 3: 1 route : => Luân chuyển 1 xe từ Depot 2 sang Depot 1 (+1 chi phí khoảng cách, +1 chi phí thời gian)
+1. Phân cụm kmean các nodes với số cụm = số depot
+2. Gán các depot tương ứng với các centroid gần nhất
+2. Với mỗi depot, tạo các route theo thuật toán Clark and Wright Savings thỏa mãn constranst time serving total, capacitied => xem cw_algorithm.md
+3. Thuật toán phân bố xe (nếu số lượng xe có sẵn không đáp ứng đủ)
+   - Sau khi routing xong, sắp xếp các depot theo thứ tự số lượng routes trong mỗi depot từ lớn nhất đến nhỏ nhất
+   - Giả sử số lượng xe ban đầu là m, số lượng depot là d => số lượng xe được chia đều cho mỗi depot: m / d
+   - Sau khi chia đều, nếu vẫn còn thừa xe, thì tiếp tục chia cho các depot còn nhu cầu theo thứ tự đã sắp xếp (lớn nhất đến nhỏ nhất)
+4. Thuật toán luân chuyển xe
+   - Với depot d, với các xe hiện tại, tiến hành routing cho các routes có total_time_serving được sắp xếp từ lớn nhất đến nhỏ nhất
+   - Nếu trong depot d vẫn còn các routes chưa được serving (thời gian serving của các xe trong depot d đã hết hoặc không đủ để đi route tiếp theo)
+   => Luân chuyển các xe từ depot gần nhất d (dc) sang routing cho các route chưa được serving, xuất phát từ dc
