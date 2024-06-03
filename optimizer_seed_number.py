@@ -54,7 +54,7 @@ def getTotalDistance(num):
     # Tối ưu route, tính toán chi phí cho tất cả các depot
     for depot_index in range(num_depots):
         savings = create_savings(depot_index, 0, depots_customers_metadata, X_pairwise, num_depots)
-        _, routes_metada_depot, _ = Clark_Wright_Savings_Solver(
+        _, routes_metada_depot, _, _ = Clark_Wright_Savings_Solver(
                                     X_pairwise,
                                     savings, 
                                     depot_index, 

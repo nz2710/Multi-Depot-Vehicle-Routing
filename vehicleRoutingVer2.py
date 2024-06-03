@@ -7,6 +7,7 @@ from constraint import *
 from cw import *
 import time
 
+
 np.random.seed(config.SEED_NUMBER)
 
 # Time đơn vị tính theo phút
@@ -65,6 +66,11 @@ for depot_index in range(num_depots):
     
     num_vehicle_depots_metadata[depot_index] = len(routes_metada_depot.keys()) # số lượng route trong 1 depot
 
+    # print("--------- Depot " + str(depot_index) + " ---------")
+    # for route in routes_metada_depot.keys():
+    #         print("Route: " + str(route))
+    #         print("Info: " + str(routes_metada_depot[route]))
+
     total_vehicles_need_for_not_allocating += num_vehicle_depots_metadata[depot_index]
 
 print("************************************************************")
@@ -90,13 +96,13 @@ for item in num_vehicle_depots_metadata_sorted:
 print("Num_depot: " + str(num_depots))
 print("Num vehicles: " + str(num_vehicles))
 
-print("--------- Số xe ước tính ---------") 
+print("--------- So xe uoc tinh ---------") 
 # Tuple (a, b) => a là depot_index, b là số xe tương ứng
 print(num_vehicle_depots_metadata_sorted)
 
 num_vehicle_depots_metadata_reassigned = caculate_vehicles_for_each_depot_method_1(X_pairwise, num_vehicles, num_vehicle_depots_metadata_sorted, num_vehicle_depots_metadata_sorted_origin)
 
-print("--------- Số xe thực tế được phân chia ---------") 
+print("--------- So xe thuc te duoc phan chia ---------") 
 # Tuple (a, b) => a là depot_index, b là số xe tương ứng
 print(num_vehicle_depots_metadata_reassigned)
 

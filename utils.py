@@ -15,17 +15,14 @@ def diffDict(dict1, dict2):
             list_diff_key.append(key1)
     return list_diff_key
 
-# # Hàm tính khoảng cách eclid
-def distanceEuclid(node1, node2):
-    square = math.pow((node1[0] - node2[0]), 2) + math.pow((node1[1] - node2[1]), 2)
-    return math.sqrt(square)
+# Hàm tính khoảng cách eclid
+# def distance(node1, node2):
+#     square = math.pow((node1[0] - node2[0]), 2) + math.pow((node1[1] - node2[1]), 2)
+#     return math.sqrt(square)
 
 # Hàm tính khoảng cách haversine_distances
 def distance(node1, node2):
-    # square = math.pow((node1[0] - node2[0]), 2) + math.pow((node1[1] - node2[1]), 2)
-    # return math.sqrt(square)
-    hd = haversine((node1[0], node1[1]), (node2[0], node2[1]))
-    return hd * 6371000/1000
+    return haversine((node1[0], node1[1]), (node2[0], node2[1]))
 
 # Total distance
 def distance_total(X_pairwise, routeNew, depot_index, num_depots):

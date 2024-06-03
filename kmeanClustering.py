@@ -6,6 +6,7 @@ import config
 from utils import *
 import random
 from sklearn.metrics.pairwise import haversine_distances
+from haversine import haversine_vector
 
 # print(haversine_distances([[1, 3]], [[4, 2]]))
 # print(haversine_distances([[1, 3], [4, 2]]))
@@ -20,8 +21,11 @@ class KmeanCore:
         return X[np.random.choice(X.shape[0], k, replace=False)]
 
     def kmeans_assign_labels(self, X, centroids):
+        # X_radians = np.radians(X)
+        # centroids_radians = np.radians(centroids)
         # tính toán khoảng cách eclid giữa các điểm dữ liệu với các centroid
-        D = haversine_distances(X, centroids)
+        D = haversine_vector(centroids, X, comb=True)
+        # D = cdist(X, centroids)
         # tập hợp các điểm gần nhất tương ứng với từng centroid
         return np.argmin(D, axis=1)
 
