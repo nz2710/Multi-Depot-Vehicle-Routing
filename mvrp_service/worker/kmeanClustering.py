@@ -4,6 +4,7 @@ from scipy.spatial.distance import cdist
 from mvrp_service import config
 from mvrp_service.utils import *
 from sklearn.metrics.pairwise import haversine_distances
+from haversine import haversine_vector
 
 class KmeanCore:
 
@@ -16,10 +17,9 @@ class KmeanCore:
 
     def kmeans_assign_labels(self, X, centroids):
         # tính toán khoảng cách eclid giữa các điểm dữ liệu với các centroid
-        X_radians = np.radians(X)
-        centroids_radians = np.radians(centroids)
-        D = haversine_distances(X_radians, centroids_radians)
+        # D = haversine_distances(X, centroids)
         # D = cdist(X, centroids)
+        D = haversine_vector(centroids, X, comb=True)
         # tập hợp các điểm gần nhất tương ứng với từng centroid
         return np.argmin(D, axis = 1)
 
