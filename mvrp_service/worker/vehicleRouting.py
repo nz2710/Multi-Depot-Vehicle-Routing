@@ -40,6 +40,8 @@ def mvrp(file_path, V):
     total_time_serving_without_allocating_vehicles = 0.0
     total_vehicle_used = 0
     num_vehicle_depots_metadata = {} # mảng lưu lại thông tin số lượng xe tương ứng với từng depot
+    alternative_dict = {}
+    depot_origin = {}
     routes_metada_depot_list = []
 
     # Tối ưu route, tính toán chi phí cho tất cả các depot
@@ -98,6 +100,9 @@ def mvrp(file_path, V):
     # # Tuple (a, b) => a là depot_index, b là số xe tương ứng
     # print(num_vehicle_depots_metadata_reassigned)
 
+    for item in num_vehicle_depots_metadata_reassigned:
+        total_vehicle_used += item[1]
+
     timeLastVehicleDictList = []
     route_not_served_List = []
     route_not_served_List_return = []
@@ -123,9 +128,9 @@ def mvrp(file_path, V):
 
         timeLastVehicleDict, route_served, route_not_served = allocateVehiclePerDepot(X_pairwise, depot_routes_sorted_time, depot_index, num_depots, max_duration_route, num_vehicle_assigned_depot)
 
-        for item in timeLastVehicleDict.keys():
-            if timeLastVehicleDict[item] < max_duration_route:
-                total_vehicle_used += 1
+        # for item in timeLastVehicleDict.keys():
+        #     if timeLastVehicleDict[item] < max_duration_route:
+        #         total_vehicle_used += 1
 
         timeLastVehicleDictList.append(timeLastVehicleDict)
         route_not_served_List.append(route_not_served)
@@ -141,6 +146,8 @@ def mvrp(file_path, V):
                     total_demand_served += routes_metada_depot_list[depot_index][str(route)]["total_demand"]
                     total_time_serving_served += routes_metada_depot_list[depot_index][str(route)]["total_time_serving"]
                     route_served_List_return.append(route)
+                    alternative_dict[str(route)] = False
+                    depot_origin[str(route)] = "depot_" + str(depot_index)
 
     # Đánh dấu xem xe depot nào đang được sử dụng
     flag_assigned = {}
@@ -149,7 +156,7 @@ def mvrp(file_path, V):
 
     closet_depot_info = []
     for depot_index in range(num_depots):
-        depot_index_closest = get_depot_closet(depot_index, num_depots, X_pairwise, flag_assigned)
+        depot_index_closest = get_depot_closet_not_related_vehicle(depot_index, num_depots, X_pairwise, flag_assigned)
         closet_depot_info.append([depot_index, depot_index_closest, distance(X_pairwise[depot_index], X_pairwise[depot_index_closest])])
 
     # sort by distance
@@ -181,22 +188,46 @@ def mvrp(file_path, V):
     # print(" Move Vehicles Available from Depot Closet to Depot Current")
     # print("************************************************************")
 
-    # Đánh dấu xem xe depot nào đang được sử dụng
+    # Đánh dấu xem xe trong depot nào đang được sử dụng
     flag_assigned = {}
     for depot_index in range(num_depots):
-        flag_assigned[depot_index] = False
+        flag_assigned[depot_index] = {}
+        for vehicle_index in timeLastVehicleDictList[depot_index].keys():
+            flag_assigned[depot_index][vehicle_index] = False
 
     for item in closet_depot_info:
+
         depot_index = item[0]
+
         if len(route_not_served_List[depot_index]) > 0:
+
+            flag_assigned2 = {}
+            for depot_index in range(num_depots):
+                flag_assigned2[depot_index] = False
+
             # Tìm depot gần nhất với depot hiện tại
             depot_index_closest = get_depot_closet(depot_index, num_depots, X_pairwise, flag_assigned)
 
-            if depot_index_closest != -1:
+            list_depots_iter = []
 
-                # flag_assigned[depot_index] = True
-                flag_assigned[depot_index_closest] = True
-                
+            depot_index_closest_not_relate_vehicles = get_depot_closet_not_related_vehicle(depot_index, num_depots, X_pairwise, flag_assigned2)
+
+            while depot_index_closest_not_relate_vehicles != -1:
+                flag_assigned2[depot_index_closest_not_relate_vehicles] = True
+                list_depots_iter.append(depot_index_closest_not_relate_vehicles)
+                depot_index_closest_not_relate_vehicles = get_depot_closet_not_related_vehicle(depot_index, num_depots, X_pairwise, flag_assigned2)
+
+            if depot_index_closest != -1:
+                list_depots_iter.remove(depot_index_closest)
+                list_depots_iter = [depot_index_closest] + list_depots_iter
+
+            # print(list_depots_iter)
+
+            # flag_assigned[depot_index] = True
+            # flag_assigned[depot_index_closest] = True
+
+            for depot_index_closest in list_depots_iter:
+
                 # list_vehicle_in_depot = timeLastVehicleDictList[depot_index]
                 list_vehicle_in_depot_closest = timeLastVehicleDictList[depot_index_closest]
 
@@ -209,11 +240,13 @@ def mvrp(file_path, V):
                 # Sort route by distance total
                 route_not_served_List_sorted_time = sorted(route_not_served_List[depot_index], key=lambda x:time_constranst_total_for_sort(X_pairwise, x, depot_index, num_depots), reverse=True)
                 
-                timeLastVehicleDictCloset, route_served_after, route_not_served_after = allocateVehiclePerDepotAfter(X_pairwise, route_not_served_List_sorted_time, depot_index_closest, num_depots, list_vehicle_in_depot_closest_sorted)
+                timeLastVehicleDictCloset, route_served_after, route_not_served_after = allocateVehiclePerDepotAfter(X_pairwise, route_not_served_List_sorted_time, depot_index_closest, num_depots, list_vehicle_in_depot_closest_sorted, flag_assigned)
 
-                for item in timeLastVehicleDictCloset.keys():
-                    if timeLastVehicleDictCloset[item] < max_duration_route:
-                        total_vehicle_used += 1
+                # print(flag_assigned)
+
+                # for item in timeLastVehicleDictCloset.keys():
+                #     if timeLastVehicleDictCloset[item] < max_duration_route:
+                #         total_vehicle_used += 1
 
                 # Tính toán chi phí routing
                 for route in route_served_after:
@@ -223,6 +256,8 @@ def mvrp(file_path, V):
                     total_demand_served += constrant_total(X_pairwise, route[1:-1], depot_index_closest, num_depots)
                     total_time_serving_served += time_constranst_total(X_pairwise, route, depot_index_closest, num_depots)
                     route_served_List_return.append(route_temp)
+                    alternative_dict[str(route_temp)] = True
+                    depot_origin[str(route_temp)] = "depot_" + str(depot_index)
 
                 # print("Routes not serving in Depot " + str(depot_index) + ":")
                 # print(route_not_served_List[depot_index])
@@ -247,11 +282,8 @@ def mvrp(file_path, V):
                 timeLastVehicleDictList[depot_index_closest] = list_vehicle_in_depot_closest_sorted # cập nhật time last của các xe ở depot gần nhất
                 route_not_served_List[depot_index] = route_not_served_after # cập nhật thông tin các route chưa được serving tại depot_index
 
-                # print("************************************************************")
-                # print("************************************************************")
-            else:
-                continue
-                # print("Vehicles from Depot closet to " + str(depot_index) + " is busy !!!")
+                # depot_index_closest = get_depot_closet(depot_index, num_depots, X_pairwise, flag_assigned)
+
                 # print("************************************************************")
                 # print("************************************************************")
         else:
@@ -267,11 +299,15 @@ def mvrp(file_path, V):
     # print("          After Two Phase Routing Of all Depot")
     # print("************************************************************")
 
+    print(flag_assigned)
+
     for depot_index, route_not_served in enumerate(route_not_served_List):
         if len(route_not_served) > 0:
             for route in route_not_served:
                 route = ["depot_" + str(depot_index)] + route + ["depot_" + str(depot_index)]
                 route_not_served_List_return.append(route)
+                alternative_dict[str(route)] = False
+                depot_origin[str(route)] = "depot_" + str(depot_index)
     
     # count_route_not_serving = 0
     total_distance_not_served = 0
@@ -317,6 +353,8 @@ def mvrp(file_path, V):
         route_list_ids_metadata["total_time_serving"] = total_time_serving
         route_list_ids_metadata["total_distance"] = total_distance
         route_list_ids_metadata["route"] = route_list_ids
+        route_list_ids_metadata["alternative"] = alternative_dict[str(route)]
+        route_list_ids_metadata["depot_origin"] = "depot_" + str(ID_mappings[int(depot_origin[str(route)].split("_")[-1])])
         route_served_List_return_ids.append(route_list_ids_metadata)
 
     for route in route_not_served_List_return:
@@ -336,6 +374,8 @@ def mvrp(file_path, V):
         route_list_ids_metadata["total_time_serving"] = total_time_serving
         route_list_ids_metadata["total_distance"] = total_distance
         route_list_ids_metadata["route"] = route_list_ids
+        route_list_ids_metadata["alternative"] = alternative_dict[str(route)]
+        route_list_ids_metadata["depot_origin"] = "depot_" + str(ID_mappings[int(depot_origin[str(route)].split("_")[-1])])
         route_not_served_List_return_ids.append(route_list_ids_metadata)
 
     total_num_customer_served = 0

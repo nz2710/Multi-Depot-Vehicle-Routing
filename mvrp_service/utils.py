@@ -22,6 +22,8 @@ def distanceEuclid(node1, node2):
 # Hàm tính khoảng cách eclid
 def distance(node1, node2):
     return haversine((node1[0], node1[1]), (node2[0], node2[1]))
+    # square = math.pow((node1[0] - node2[0]), 2) + math.pow((node1[1] - node2[1]), 2)
+    # return math.sqrt(square)
 
 # Total distance
 def distance_total(X_pairwise, routeNew, depot_index, num_depots):
@@ -114,8 +116,25 @@ def caculate_pairwise(customers_info, depots_info, v):
     
     return X_for_kmean, De_for_kmean, X_pairwise, ID_mappings
 
-# Lấy depot gần nhất với depot đang xét
+def exist_vehicle_not_used(flag_assigned, depot_index):
+    for key in flag_assigned[depot_index].keys():
+        if flag_assigned[depot_index][key] is False:
+            return True
+    return False
+
+# Lấy depot gần nhất với depot đang xét, bao gồm check điều kiện các xe có sẵn hay ko
 def get_depot_closet(depot_index, num_depots, X_pairwise, flag_assigned):
+    min_distance = config.MAX_NUMBER
+    for di in range(num_depots):
+        if di != depot_index and exist_vehicle_not_used(flag_assigned, depot_index):
+            min_distance = min(min_distance, distance(X_pairwise[di], X_pairwise[depot_index]))
+    for di in range(num_depots):
+        if di != depot_index and exist_vehicle_not_used(flag_assigned, depot_index):
+            if min_distance == distance(X_pairwise[di], X_pairwise[depot_index]):
+                return di
+    return -1
+
+def get_depot_closet_not_related_vehicle(depot_index, num_depots, X_pairwise, flag_assigned):
     min_distance = config.MAX_NUMBER
     for di in range(num_depots):
         if di != depot_index and flag_assigned[di] != True:
@@ -159,7 +178,7 @@ def caculate_vehicles_for_each_depot_method_1(X_pairwise,
                 #     print(str(i) + " === " + str(num_vehicle_assign_last))
                 # Từ depot ở vị trí i + 1 trong mảng num_vehicle_depots_metadata_sorted trở đi
                 # Tìm depot gần nhất với depot ở vị trí i
-                depot_closet_i = get_depot_closet(num_vehicle_depots_metadata_sorted[i][0], num_depots, X_pairwise, flag_assigned)
+                depot_closet_i = get_depot_closet_not_related_vehicle(num_vehicle_depots_metadata_sorted[i][0], num_depots, X_pairwise, flag_assigned)
                 # if i == 3:
                 #     print("depot_closet: " + str(depot_closet_i))
                 if depot_closet_i != -1:
@@ -193,7 +212,7 @@ def caculate_vehicles_for_each_depot_method_1(X_pairwise,
         elif 0 < num_vehicle_assign_last < t:
             # Từ depot ở vị trí i + 1 trong mảng num_vehicle_depots_metadata_sorted trở đi
             # Tìm depot gần nhất với depot ở vị trí i
-            depot_closet_i = get_depot_closet(num_vehicle_depots_metadata_sorted[i][0], num_depots, X_pairwise, flag_assigned)
+            depot_closet_i = get_depot_closet_not_related_vehicle(num_vehicle_depots_metadata_sorted[i][0], num_depots, X_pairwise, flag_assigned)
             if depot_closet_i != -1:
                 if flag_assigned[depot_closet_i] == False:
                     for index, item in enumerate(num_vehicle_depots_metadata_sorted):

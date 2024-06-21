@@ -1,0 +1,5 @@
+numpy
+haversine
+flask
+flask-cors
+tqdm

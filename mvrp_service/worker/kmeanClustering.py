@@ -1,11 +1,10 @@
 import numpy as np
 np.seterr(divide='ignore', invalid='ignore')
-from scipy.spatial.distance import cdist
+# from scipy.spatial.distance import cdist
 from mvrp_service import config
 from mvrp_service.utils import *
-from sklearn.metrics.pairwise import haversine_distances
+# from sklearn.metrics.pairwise import haversine_distances
 from haversine import haversine_vector
-
 class KmeanCore:
 
     def __init__(self) -> None:
@@ -20,8 +19,8 @@ class KmeanCore:
         # X_radians = np.radians(X)
         # centroids_radians = np.radians(centroids)
         # D = haversine_distances(X_radians, centroids_radians)
-        # D = cdist(X, centroids)
         D = haversine_vector(centroids, X, comb=True)
+        # D = cdist(X, centroids)
         # tập hợp các điểm gần nhất tương ứng với từng centroid
         return np.argmin(D, axis = 1)
 

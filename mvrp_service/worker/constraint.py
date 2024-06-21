@@ -91,7 +91,7 @@ def allocateVehiclePerDepot(X_pairwise, depot_routes_sorted_time, depot_index, n
         return timeLastVehicleDict, route_served, route_not_served
 
 # Phân bổ xe cho các route chưa được serving trong cùng một depot, sử dụng các xe lấy từ depot gần nhất
-def allocateVehiclePerDepotAfter(X_pairwise, depot_routes_sorted_time, depot_index, num_depots, timeLastVehicleDictCloset):
+def allocateVehiclePerDepotAfter(X_pairwise, depot_routes_sorted_time, depot_index, num_depots, timeLastVehicleDictCloset, flag_assigned):
 
     timeRouteDict = {}
     flag_used_route = {}
@@ -105,9 +105,10 @@ def allocateVehiclePerDepotAfter(X_pairwise, depot_routes_sorted_time, depot_ind
     for i, r in enumerate(range(len(depot_routes_sorted_time))):
         t = timeRouteDict[r]
         for v in timeLastVehicleDictCloset.keys():
-            if timeLastVehicleDictCloset[v] >= t:
+            if timeLastVehicleDictCloset[v] >= t and flag_assigned[depot_index][v] is False:
                 timeLastVehicleDictCloset[v] = timeLastVehicleDictCloset[v] - t
                 flag_used_route[i] = True
+                flag_assigned[depot_index][v] = True
                 break
 
     finish = False
@@ -130,9 +131,10 @@ def allocateVehiclePerDepotAfter(X_pairwise, depot_routes_sorted_time, depot_ind
         
         for route_not_used in list_route_not_used:
             for v in timeLastVehicleDictCloset.keys():
-                if timeLastVehicleDictCloset[v] >= timeRouteDict[route_not_used] and flag_used_route[route_not_used] != True:
+                if timeLastVehicleDictCloset[v] >= timeRouteDict[route_not_used] and flag_used_route[route_not_used] != True and flag_assigned[depot_index][v] is False:
                     timeLastVehicleDictCloset[v] = timeLastVehicleDictCloset[v] - timeRouteDict[route_not_used]
                     flag_used_route[route_not_used] = True
+                    flag_assigned[depot_index][v] = True
                     finish = False
                     break
 
