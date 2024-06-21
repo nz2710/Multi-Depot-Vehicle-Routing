@@ -21,8 +21,6 @@ def distanceEuclid(node1, node2):
 
 # Hàm tính khoảng cách eclid
 def distance(node1, node2):
-    # hd = haversine((node1[0], node1[1]), (node2[0], node2[1]))
-    # square = math.pow((node1[0] - node2[0]), 2) + math.pow((node1[1] - node2[1]), 2)
     return haversine((node1[0], node1[1]), (node2[0], node2[1]))
 
 # Total distance

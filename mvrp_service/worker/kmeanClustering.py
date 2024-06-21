@@ -17,7 +17,9 @@ class KmeanCore:
 
     def kmeans_assign_labels(self, X, centroids):
         # tính toán khoảng cách eclid giữa các điểm dữ liệu với các centroid
-        # D = haversine_distances(X, centroids)
+        # X_radians = np.radians(X)
+        # centroids_radians = np.radians(centroids)
+        # D = haversine_distances(X_radians, centroids_radians)
         # D = cdist(X, centroids)
         D = haversine_vector(centroids, X, comb=True)
         # tập hợp các điểm gần nhất tương ứng với từng centroid
