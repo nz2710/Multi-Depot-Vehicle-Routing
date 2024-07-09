@@ -299,7 +299,7 @@ def mvrp(file_path, V):
     # print("          After Two Phase Routing Of all Depot")
     # print("************************************************************")
 
-    print(flag_assigned)
+    # print(flag_assigned)
 
     for depot_index, route_not_served in enumerate(route_not_served_List):
         if len(route_not_served) > 0:
